@@ -248,18 +248,4 @@ describe('Api tests with json-server', () => {
 
   })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 })
-
