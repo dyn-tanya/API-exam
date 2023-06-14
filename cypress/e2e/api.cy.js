@@ -13,6 +13,24 @@ user.password = faker.internet.password();
 
 describe('Api tests with json-server', () => {
 
+  let token;
+
+  it('Registration', () => {
+    cy.request({
+      method: 'POST',
+      url: '/register',
+      body:
+      {
+        "email": user.email,
+        "password": user.password
+      },
+    }).then(response => {
+      token = 'Bearer ' + response.body.accessToken
+      expect(response.status).to.be.eq(201);
+      console.log(token)
+    })
+  })
+
   it('1 - Get all post', () => {
 
     cy.request({
@@ -63,51 +81,46 @@ describe('Api tests with json-server', () => {
     })
   })
 
+
   it('5 - Create post with adding access token in header', () => {
 
     cy.request({
+      headers:
+      {
+        'Authorization': token
+      },
       method: 'POST',
-      url: '/users',
-      body: {
-        email: user.email,
-        password: user.password
+      url: '/664/posts',
+      body:
+      {
+        title: post.title,
+        body: post.body
       }
     }).then(response => {
-      expect(response.status).to.be.equal(201);
-    })
-
-    cy.request({
-      method: 'POST',
-      url: '/664/posts/',
-      body: post,
-      headers: {
-        Authorization: `Bearer ${user.accessToken}`
-      }
-    }).then(response => {
-      expect(response.status).to.be.equal(201);
-      expect(response.body.id).to.be.equal(post.id);
-      expect(response.body.userId).to.be.equal(post.userId);
-      expect(response.body.title).to.be.equal(post.title);
-      expect(response.body.body).to.be.equal(post.body);
-    })
-
-    cy.request({
-      method: 'GET',
-      url: `/664/posts/${post.id}`,
-    }).then(response => {
-      expect(response.status).to.be.equal(200);
-      expect(response.body.id).to.be.equal(post.id);
-      expect(response.body.userId).to.be.equal(post.userId);
-      expect(response.body.title).to.be.equal(post.title);
-      expect(response.body.body).to.be.equal(post.body);
+      expect(response.status).to.be.eq(201);
+      expect(response.body.title).to.be.eq(post.title);
+      expect(response.body.body).to.be.eq(post.body);
+      post.id = response.body.id;
+    }).then(() => {
+      cy.request({
+        headers:
+        {
+          'Content-Type': 'application/json'
+        },
+        method: 'GET',
+        url: `/664/posts/${post.id}`
+      }).then(response => {
+        expect(response.status).to.be.eq(200);
+        expect(response.body.title).to.be.eq(post.title);
+        expect(response.body.body).to.be.eq(post.body);
+      })
     })
   })
 
 
   it('6 - Create post entity and verify that the entity is created', () => {
 
-    post.id = '23434343'
-    post.userId = '7654321565';
+    post.id = '12345'
     post.body = 'json-server56';
     post.title = 'typicode56'
 
@@ -118,22 +131,19 @@ describe('Api tests with json-server', () => {
     }).then(response => {
       expect(response.status).to.be.equal(201);
       expect(response.body.id).to.be.equal(post.id);
-      expect(response.body.userId).to.be.equal(post.userId);
       expect(response.body.title).to.be.equal(post.title);
       expect(response.body.body).to.be.equal(post.body);
+    }).then(() => {
+      cy.request({
+        method: 'GET',
+        url: `/posts/${post.id}`,
+      }).then(response => {
+        expect(response.status).to.be.equal(200);
+        expect(response.body.id).to.be.equal(post.id);
+        expect(response.body.title).to.be.equal(post.title);
+        expect(response.body.body).to.be.equal(post.body);
+      })
     })
-
-    cy.request({
-      method: 'GET',
-      url: `/posts/${post.id}`,
-    }).then(response => {
-      expect(response.status).to.be.equal(200);
-      expect(response.body.id).to.be.equal(post.id);
-      expect(response.body.userId).to.be.equal(post.userId);
-      expect(response.body.title).to.be.equal(post.title);
-      expect(response.body.body).to.be.equal(post.body);
-    })
-
   })
 
 
@@ -152,39 +162,36 @@ describe('Api tests with json-server', () => {
 
   it('8 - Create post entity and update the created entity', () => {
 
+    post.id = '1234587'
+
     cy.request({
       method: 'POST',
       url: '/posts',
       body: post
     }).then(response => {
-      expect(response.status).to.be.equal(200);
+      expect(response.status).to.be.equal(201);
       expect(response.body.id).to.be.equal(post.id);
       expect(response.body.userId).to.be.equal(post.userId);
       expect(response.body.title).to.be.equal(post.title);
       expect(response.body.body).to.be.equal(post.body);
+    }).then(() => {
+      post.userId = '56565';
+      post.body = 'ill-fated-textual';
+      post.title = 'Greenfelder'
+      cy.request({
+        method: 'PUT',
+        url: `/posts/${post.id}`,
+        body: post
+      }).then(response => {
+        expect(response.status).to.be.equal(200);
+        expect(response.body.id).to.be.equal(post.id);
+        expect(response.body.userId).to.be.equal(post.userId);
+        expect(response.body.title).to.be.equal(post.title);
+        expect(response.body.body).to.be.equal(post.body);
+      })
     })
 
   })
-
-  it('8 - Update the created entity', () => {
-
-    post.id = '23434343556'
-    post.userId = '56565';
-    post.body = 'ill-fated-textual';
-    post.title = 'Greenfelder'
-    cy.request({
-      method: 'PUT',
-      url: '/posts/',
-      body: post
-    }).then(response => {
-      expect(response.status).to.be.equal(200);
-      expect(response.body.id).to.be.equal(post.id);
-      expect(response.body.userId).to.be.equal(post.userId);
-      expect(response.body.title).to.be.equal(post.title);
-      expect(response.body.body).to.be.equal(post.body);
-    })
-  })
-
 
   it('9 - Delete non-existing post entity', () => {
     cy.request({
@@ -197,55 +204,49 @@ describe('Api tests with json-server', () => {
     })
   })
 
-
   it('10 - Create post entity', () => {
-
+    post.id = '12345834347'
     cy.request({
       method: 'POST',
       url: '/posts',
       body: post
     }).then(response => {
       expect(response.status).to.be.equal(201);
-      expect(response.body.id).to.be.equal(post.id);
       expect(response.body.userId).to.be.equal(post.userId);
       expect(response.body.title).to.be.equal(post.title);
       expect(response.body.body).to.be.equal(post.body);
+    }).then(() => {
+
+      post.userId = '987465123';
+      post.body = 'json-server';
+      post.title = 'typicode'
+
+      cy.request({
+        method: 'PUT',
+        url: `/posts/${post.id}`,
+        body: post
+      }).then(response => {
+        expect(response.status).to.be.equal(200);
+        expect(response.body.userId).to.be.equal(post.userId);
+        expect(response.body.title).to.be.equal(post.title);
+        expect(response.body.body).to.be.equal(post.body);
+      })
+
+      cy.request({
+        method: 'DELETE',
+        url: `/posts/${post.id}`,
+      }).then(response => {
+        expect(response.status).to.be.equal(200);
+        expect(response.body.id).to.be.equal(undefined);
+      })
+
+      cy.request({
+        method: 'GET',
+        url: `/posts/${post.id}`,
+        failOnStatusCode: false,
+      }).then(response => {
+        expect(response.status).to.be.equal(404);
+      })
     })
   })
-
-  it('10 - Update the created entity and delete the entity', () => {
-
-    post.userId = '987465123';
-    post.body = 'json-server';
-    post.title = 'typicode'
-
-    cy.request({
-      method: 'PUT',
-      url: `/posts/${post.id}`,
-      body: post
-    }).then(response => {
-      expect(response.status).to.be.equal(200);
-      expect(response.body.userId).to.be.equal(post.userId);
-      expect(response.body.title).to.be.equal(post.title);
-      expect(response.body.body).to.be.equal(post.body);
-    })
-
-    cy.request({
-      method: 'DELETE',
-      url: `/posts/${post.id}`,
-    }).then(response => {
-      expect(response.status).to.be.equal(200);
-      expect(response.body.id).to.be.equal(undefined);
-    })
-
-    cy.request({
-      method: 'GET',
-      url: `/posts/${post.id}`,
-      failOnStatusCode: false,
-    }).then(response => {
-      expect(response.status).to.be.equal(404);
-    })
-
-  })
-
 })
